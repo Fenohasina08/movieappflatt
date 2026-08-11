@@ -40,6 +40,10 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (recipeProvider.errorMessage != null) ...[
+              _ErrorBanner(message: recipeProvider.errorMessage!),
+              const SizedBox(height: 10),
+            ],
             SearchField(
               hintText: 'Rechercher une recette...',
               onChanged: recipeProvider.updateSearchQuery,
@@ -87,6 +91,40 @@ class HomeScreen extends StatelessWidget {
         onPressed: () => context.push('/add'),
         icon: const Icon(Icons.add),
         label: const Text('Ajouter'),
+      ),
+    );
+  }
+}
+
+/// Bannière affichée si le chargement des données a échoué, pour prévenir
+/// l'utilisateur sans faire planter l'écran (voir [RecipeProvider.errorMessage]).
+class _ErrorBanner extends StatelessWidget {
+  final String message;
+
+  const _ErrorBanner({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline,
+              color: Theme.of(context).colorScheme.onErrorContainer),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onErrorContainer,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

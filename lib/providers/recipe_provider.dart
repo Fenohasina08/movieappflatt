@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../data/recipe_repository.dart';
 import '../models/recipe.dart';
 
@@ -6,35 +6,77 @@ import '../models/recipe.dart';
 ///
 /// Toute la logique de filtrage vit ici, pas dans les widgets, afin de
 /// garder l'UI "bête" et réutilisable.
+///
+/// Le repository est injecté via le constructeur (avec une implémentation
+/// par défaut) plutôt qu'instancié en dur : cela permet de fournir un
+/// faux repository dans les tests pour simuler des cas d'erreur ou des
+/// jeux de données spécifiques, sans dépendre des vraies données.
 class RecipeProvider extends ChangeNotifier {
-  final List<Recipe> _recipes = RecipeRepository.getInitialRecipes();
+  RecipeProvider({RecipeRepository? repository})
+    : _repository = repository ?? const RecipeRepository() {
+    _loadInitialRecipes();
+  }
+
+  final RecipeRepository _repository;
+
+  final List<Recipe> _recipes = [];
 
   String _searchQuery = '';
   String _selectedCategory = 'Tous';
+
+  /// Message d'erreur à afficher dans l'UI si le chargement des données
+  /// a échoué. `null` si tout va bien.
+  String? _errorMessage;
+  String? get errorMessage => _errorMessage;
+
+  /// Charge les recettes initiales depuis le repository. En cas d'échec
+  /// (ex: source de données corrompue ou indisponible), l'app ne plante
+  /// pas : elle démarre avec une liste vide et expose un message d'erreur
+  /// que l'UI peut afficher, plutôt que de crasher silencieusement.
+  void _loadInitialRecipes() {
+    try {
+      final initial = _repository.getInitialRecipes();
+      _recipes.addAll(initial);
+      _errorMessage = null;
+    } on RecipeRepositoryException catch (e) {
+      _errorMessage = e.message;
+    } catch (e) {
+      _errorMessage = 'Une erreur inattendue est survenue au chargement '
+          'des recettes.';
+    }
+  }
 
   List<Recipe> get allRecipes => List.unmodifiable(_recipes);
 
   String get searchQuery => _searchQuery;
   String get selectedCategory => _selectedCategory;
-  List<String> get categories => RecipeRepository.getCategories();
+
+  List<String> get categories {
+    try {
+      return _repository.getCategories();
+    } catch (_) {
+      // Repli sûr : si la source de catégories est indisponible, on
+      // garde au minimum le filtre "Tous" pour ne pas casser l'UI.
+      return const ['Tous'];
+    }
+  }
 
   List<Recipe> get filteredRecipes {
+    final query = _searchQuery.trim().toLowerCase();
     return _recipes.where((recipe) {
       final matchesCategory =
           _selectedCategory == 'Tous' || recipe.category == _selectedCategory;
-      final matchesSearch = recipe.title
-          .toLowerCase()
-          .contains(_searchQuery.toLowerCase());
+      final matchesSearch = query.isEmpty ||
+          recipe.title.toLowerCase().contains(query);
       return matchesCategory && matchesSearch;
     }).toList();
   }
 
   Recipe? getById(String id) {
-    try {
-      return _recipes.firstWhere((r) => r.id == id);
-    } catch (_) {
-      return null;
+    for (final recipe in _recipes) {
+      if (recipe.id == id) return recipe;
     }
+    return null;
   }
 
   void updateSearchQuery(String query) {
@@ -47,8 +89,18 @@ class RecipeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addRecipe(Recipe recipe) {
+  /// Ajoute une recette après une validation défensive minimale : même si
+  /// le formulaire valide déjà ses champs, le provider ne fait pas
+  /// confiance aveuglément à l'appelant et refuse une recette manifestement
+  /// invalide (titre vide ou temps de préparation négatif/nul), ce qui
+  /// évite de corrompre l'état de l'app si `addRecipe` est un jour appelé
+  /// depuis un autre endroit que le formulaire.
+  bool addRecipe(Recipe recipe) {
+    if (recipe.title.trim().isEmpty || recipe.prepTimeMinutes <= 0) {
+      return false;
+    }
     _recipes.add(recipe);
     notifyListeners();
+    return true;
   }
 }

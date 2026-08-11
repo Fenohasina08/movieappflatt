@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../data/recipe_repository.dart';
 import '../models/recipe.dart';
 import '../providers/recipe_provider.dart';
 
@@ -88,7 +87,18 @@ class _FormScreenState extends State<FormScreen> {
       ingredients: ingredients.isEmpty ? ['Non renseigné'] : ingredients,
     );
 
-    recipeProvider.addRecipe(newRecipe);
+    final added = recipeProvider.addRecipe(newRecipe);
+
+    if (!added) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Impossible d'ajouter cette recette : données invalides.",
+          ),
+        ),
+      );
+      return;
+    }
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Recette ajoutée avec succès !')),
@@ -98,9 +108,19 @@ class _FormScreenState extends State<FormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final categories = RecipeRepository.getCategories()
+    final providerCategories = context
+        .watch<RecipeProvider>()
+        .categories
         .where((c) => c != 'Tous')
         .toList();
+    // Repli défensif : si la source de catégories est vide (cas d'erreur
+    // improbable géré par le provider), on garde au moins une option pour
+    // que le DropdownButtonFormField reste utilisable.
+    final categories =
+        providerCategories.isEmpty ? const ['Plat'] : providerCategories;
+    if (!categories.contains(_category)) {
+      _category = categories.first;
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Nouvelle recette')),

@@ -52,6 +52,19 @@ widgets. Les recettes viennent de `lib/data/recipe_repository.dart`, et
 l'état (liste filtrée, recherche, thème) est géré par des `ChangeNotifier`
 dans `lib/providers/`.
 
+**Testabilité** : `RecipeRepository` est une classe instanciable (et non
+un ensemble de méthodes statiques), injectée dans `RecipeProvider` via son
+constructeur (`RecipeProvider({RecipeRepository? repository})`). Cela
+permet de fournir un faux repository dans les tests pour simuler des cas
+d'erreur, sans dépendre des vraies données.
+
+**Gestion des erreurs** : le chargement des recettes initiales est protégé
+par un `try/catch`. En cas d'échec, l'app ne plante pas — elle démarre
+avec une liste vide et affiche une bannière d'erreur sur `HomeScreen`
+(voir `RecipeProvider.errorMessage`). `addRecipe` effectue aussi une
+validation défensive minimale (titre non vide, temps de préparation > 0)
+avant d'accepter une nouvelle recette.
+
 ## 📂 Structure du projet
 
 ```
@@ -78,7 +91,17 @@ recipe_app/
 │       ├── search_field.dart        # Réutilisable
 │       └── category_filter_bar.dart # Réutilisable
 ├── test/
-│   └── widget_test.dart             # Tests de base (UI + logique)
+│   ├── widget_test.dart              # Tests d'app (navigation, écrans)
+│   ├── data/
+│   │   └── recipe_repository_test.dart
+│   ├── providers/
+│   │   ├── recipe_provider_test.dart # Recherche, filtre, ajout, erreurs
+│   │   └── theme_provider_test.dart
+│   ├── widgets/
+│   │   ├── recipe_card_test.dart
+│   │   └── category_filter_bar_test.dart
+│   └── screens/
+│       └── form_screen_test.dart     # Validation + soumission du formulaire
 ├── screenshots/                     # Captures d'écran à ajouter
 ├── pubspec.yaml
 └── README.md
