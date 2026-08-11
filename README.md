@@ -97,11 +97,18 @@ recipe_app/
 │   ├── providers/
 │   │   ├── recipe_provider_test.dart # Recherche, filtre, ajout, erreurs
 │   │   └── theme_provider_test.dart
+│   ├── router/
+│   │   └── app_router_test.dart      # Résolution des 4 routes nommées
 │   ├── widgets/
 │   │   ├── recipe_card_test.dart
 │   │   └── category_filter_bar_test.dart
 │   └── screens/
-│       └── form_screen_test.dart     # Validation + soumission du formulaire
+│       ├── form_screen_test.dart     # Validation + soumission du formulaire
+│       ├── home_screen_test.dart     # Recherche, responsive, état d'erreur
+│       ├── detail_screen_test.dart   # extra vs provider, garde-fou id
+│       └── settings_screen_test.dart
+├── .github/workflows/
+│   └── flutter_ci.yml                # CI : format, analyze, test
 ├── screenshots/                     # Captures d'écran à ajouter
 ├── pubspec.yaml
 └── README.md
@@ -175,3 +182,22 @@ flutter test
 ## 📄 Licence
 
 Projet réalisé à des fins pédagogiques.
+
+## 🧪 État actuel du projet (pour relecture / certification)
+
+Tous les fichiers listés dans la structure ci-dessus sont présents et
+implémentés dans `lib/` : `main.dart`, les 4 écrans (`home`, `detail`,
+`form`, `settings`), les 2 providers, le repository, le router et les
+4 widgets réutilisables. Aucune logique n'est commentée ou laissée en
+placeholder.
+
+- **Tests** : 9 fichiers de tests, couvrant le repository, les 2
+  providers (y compris les cas d'erreur simulés), le router, les widgets
+  réutilisables et les 4 écrans. Lancer `flutter test` pour les exécuter.
+- **CI** : un workflow GitHub Actions (`.github/workflows/flutter_ci.yml`)
+  exécute `dart format`, `flutter analyze` et `flutter test` à chaque push
+  / pull request sur `main`.
+- **Captures d'écran** : celles référencées dans ce README sont des
+  emplacements à remplacer par de vraies captures (voir
+  `screenshots/README.md`) — génère-les depuis `flutter run` une fois le
+  projet lancé localement.

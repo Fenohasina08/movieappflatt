@@ -95,12 +95,27 @@ class RecipeProvider extends ChangeNotifier {
   /// invalide (titre vide ou temps de préparation négatif/nul), ce qui
   /// évite de corrompre l'état de l'app si `addRecipe` est un jour appelé
   /// depuis un autre endroit que le formulaire.
+  ///
+  /// Cette méthode est aussi entourée d'un `try/catch` : aujourd'hui,
+  /// `_recipes.add` sur une simple `List` en mémoire ne peut pas échouer,
+  /// mais si le repository évolue vers une vraie persistance (API,
+  /// base de données locale...), une écriture pourra lever une exception
+  /// (ex: réseau indisponible). Le `try/catch` est prêt pour ce cas :
+  /// l'échec est capturé, exposé via [errorMessage], et l'app ne plante
+  /// pas au lieu de propager une exception non gérée jusqu'à l'UI.
   bool addRecipe(Recipe recipe) {
     if (recipe.title.trim().isEmpty || recipe.prepTimeMinutes <= 0) {
       return false;
     }
-    _recipes.add(recipe);
-    notifyListeners();
-    return true;
+    try {
+      _recipes.add(recipe);
+      _errorMessage = null;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = "Impossible d'ajouter la recette : $e";
+      notifyListeners();
+      return false;
+    }
   }
 }

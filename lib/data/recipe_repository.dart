@@ -22,6 +22,12 @@ class RecipeRepositoryException implements Exception {
 /// double de test (mock/fake) dans les tests unitaires. Un repository
 /// entièrement statique ne peut pas être substitué, ce qui rend le
 /// provider difficile à tester en isolation.
+///
+/// Le constructeur reste `const` tant que la classe ne porte aucun état
+/// ni dépendance (ex: un client HTTP, une connexion à une base locale) :
+/// si une telle dépendance est ajoutée plus tard, retirer `const` du
+/// constructeur (et des points d'instanciation comme `RecipeProvider`)
+/// sera alors nécessaire.
 class RecipeRepository {
   const RecipeRepository();
 

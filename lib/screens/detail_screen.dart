@@ -10,7 +10,12 @@ import '../providers/recipe_provider.dart';
 /// - [recipeFromExtra] vient de l'objet "extra" passé lors du push,
 ///   utilisé en priorité pour éviter une recherche ; sinon on retrouve
 ///   la recette via le Provider grâce à l'id (utile si on arrive par un
-///   lien direct, ex: deep link).
+///   lien direct, ex: deep link, où "extra" n'est pas disponible).
+///
+/// Garde-fou : si [recipeFromExtra] est fourni mais que son `id` ne
+/// correspond pas à [recipeId] (ex: état de navigation incohérent), on
+/// ignore l'objet "extra" et on se rabat sur une recherche par id auprès
+/// du provider plutôt que d'afficher silencieusement la mauvaise recette.
 class DetailScreen extends StatelessWidget {
   final String recipeId;
   final Recipe? recipeFromExtra;
@@ -23,8 +28,12 @@ class DetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final extra = recipeFromExtra;
+    final trustedExtra = (extra != null && extra.id == recipeId)
+        ? extra
+        : null;
     final recipe =
-        recipeFromExtra ?? context.watch<RecipeProvider>().getById(recipeId);
+        trustedExtra ?? context.watch<RecipeProvider>().getById(recipeId);
 
     if (recipe == null) {
       return Scaffold(
